@@ -36,10 +36,10 @@ typedef struct
 }
 GIT_NODE;
 
-typedef void (*git_node_callback)(GIT_NODE *p_node);
+typedef void (*git_node_callback)(GIT_NODE *p_node, void *p_param);
 
 /****************************************************************************
  * Public function prototypes
  ****************************************************************************/
 
-int scan_git_dir( const TCHAR dir[], git_node_callback cb);
+int scan_git_dir( const TCHAR dir[], git_node_callback cb, void *p_param);

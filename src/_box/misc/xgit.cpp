@@ -115,11 +115,7 @@ static const BYTE *Header( const BYTE *bp, int *total = NULL, DWORD *version = N
   DWORD       _version;
   DWORD       _total;
 
-  if ( get_dword( &bp ) != 0x44495243 )   /* 0x43524944 */
-    {
-      /**/
-    }
-  else
+  if ( get_dword( &bp ) == 0x44495243 )   /* 0x43524944 */
     {
       _version = get_dword( &bp );
       _total   = get_dword( &bp );
@@ -144,7 +140,6 @@ static const BYTE *Header( const BYTE *bp, int *total = NULL, DWORD *version = N
 static const BYTE *Body( const BYTE *bp, const TCHAR *root, GIT_NODE *g_idx )
 {
   WORD         len;
-  TCHAR        path[ MAX_PATH ];
   int          i;
   CHAR         cc[ MAX_PATH ];
   const BYTE  *top = bp;
@@ -209,11 +204,15 @@ static const BYTE *Body( const BYTE *bp, const TCHAR *root, GIT_NODE *g_idx )
 
   /* path conv */
 
-  ::MultiByteToWideChar( CP_UTF8, 0U, cc, -1, path, MAX_PATH );
-
   _tcscpy_s(g_idx->path, MAX_PATH, root);
 
-  PathAppend(g_idx->path, path);
+  _tcscat(g_idx->path, L"/");
+
+  ::MultiByteToWideChar( CP_UTF8, 0U,
+                         cc,
+                         -1,
+                         g_idx->path + _tcsclen(g_idx->path),
+                         MAX_PATH );
 
   /* next point */
 
@@ -332,7 +331,7 @@ static HANDLE open_git_index(const TCHAR *input, TCHAR *git_path, size_t size)
 }
 
 /* ------------------------------------------------------------------------ */
-static int scan_git_index(const BYTE *bp, const TCHAR *git_path, git_node_callback cb)
+static int scan_git_index(const BYTE *bp, const TCHAR *git_path, git_node_callback cb, void *p_param)
 {
   int       total = 0;
   DWORD     version;
@@ -353,7 +352,7 @@ static int scan_git_index(const BYTE *bp, const TCHAR *git_path, git_node_callba
 
       if (cb)
         {
-          cb(&g_idx);
+          cb(&g_idx, p_param);
         }
     }
 
@@ -364,7 +363,7 @@ static int scan_git_index(const BYTE *bp, const TCHAR *git_path, git_node_callba
  * Public functions
  ****************************************************************************/
 
-int scan_git_dir( const TCHAR dir[], git_node_callback cb)
+int scan_git_dir( const TCHAR dir[], git_node_callback cb, void *p_param)
 {
   HANDLE  hFile;
   TCHAR   path[ MAX_PATH ];
@@ -403,7 +402,7 @@ int scan_git_dir( const TCHAR dir[], git_node_callback cb)
         {
           /* Analysis */
 
-          total = scan_git_index(bp, path, cb);
+          total = scan_git_index(bp, path, cb, p_param);
         }
 
       free(bp);
